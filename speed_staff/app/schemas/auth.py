@@ -11,6 +11,7 @@ class VerifyOTPRequest(BaseModel):
     phone: str
     code: str
     purpose: Literal['register', 'login', 'reset']
+    role: Optional[Literal['seeker', 'employer', 'user']] = 'user'
 
 class RegisterWithEmailRequest(BaseModel):
     email: EmailStr

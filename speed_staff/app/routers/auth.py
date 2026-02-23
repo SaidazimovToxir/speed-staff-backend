@@ -99,7 +99,7 @@ async def verify_otp(request: VerifyOTPRequest, db: AsyncSession = Depends(get_d
         if result.scalars().first():
             return error_response("USER_ALREADY_EXISTS", "Phone already registered", 409)
         
-        user = User(phone=request.phone, is_verified=True, role='user')
+        user = User(phone=request.phone, is_verified=True, role=request.role or 'user')
         db.add(user)
         await db.commit()
         await db.refresh(user)
