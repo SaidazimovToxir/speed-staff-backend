@@ -27,6 +27,7 @@ class Settings(BaseSettings):
 
     ADMIN_USERNAME: str
     ADMIN_PASSWORD: str
+    ADMIN_SESSION_SECRET: str
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

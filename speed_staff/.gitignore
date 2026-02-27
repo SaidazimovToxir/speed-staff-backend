@@ -184,3 +184,20 @@ Thumbs.db
 
 # Project specific
 uploads/
+
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.override.yml

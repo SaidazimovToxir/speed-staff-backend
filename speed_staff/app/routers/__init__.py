@@ -1,1 +1,9 @@
 from .auth import router as auth_router
+from .seeker import router as seeker_router
+from .upload import router as upload_router
+from .employer import router as employer_router
+from .vacancy import router as vacancy_router
+from .search import router as search_router
+from .application import router as application_router
+from .review import router as review_router
+from .admin import router as admin_router

@@ -5,13 +5,19 @@ from pydantic import BaseModel, EmailStr
 
 class SendOTPRequest(BaseModel):
     phone: str
-    purpose: Literal['register', 'login', 'reset']
 
 class VerifyOTPRequest(BaseModel):
     phone: str
     code: str
-    purpose: Literal['register', 'login', 'reset']
-    role: Optional[Literal['seeker', 'employer', 'user']] = 'user'
+
+class FinalizeRegistrationRequest(BaseModel):
+    phone: str
+    code: str
+    password: str
+    role: Literal['seeker', 'employer']
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    restaurant_name: Optional[str] = None
 
 class RegisterWithEmailRequest(BaseModel):
     email: EmailStr

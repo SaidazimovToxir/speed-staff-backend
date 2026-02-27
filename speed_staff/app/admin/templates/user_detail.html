@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}User Detail{% endblock %}
+{% block header %}
+{% if profile and db_user.role == 'seeker' %}
+{{ profile.first_name }} {{ profile.last_name }}
+{% elif profile and db_user.role == 'employer' %}
+{{ profile.restaurant_name }}
+{% else %}
+User Profile
+{% endif %}
+<span class="text-sm font-normal text-gray-500">{{ db_user.id }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex gap-4">
+    <a href="/admin/users"
+        class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+        <i class="fas fa-arrow-left mr-2"></i> Back to Users
+    </a>
+</div>
+
+<div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+    <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+        <div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Account Information</h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and application status.</p>
+        </div>
+        <div>
+            {% if db_user.is_blocked %}
+            <form action="/admin/users/{{ db_user.id }}/unblock" method="POST" class="inline">
+                <button type="submit"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
+                    <i class="fas fa-unlock mr-2"></i> Unblock User
+                </button>
+            </form>
+            {% else %}
+            <form action="/admin/users/{{ db_user.id }}/block" method="POST" class="inline">
+                <button type="submit"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700"
+                    onclick="return confirm('Are you sure you want to block this user?');">
+                    <i class="fas fa-ban mr-2"></i> Block User
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    <div class="border-t border-gray-200">
+        <dl>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Phone number</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ db_user.phone }}</dd>
+            </div>
+            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Email address</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ db_user.email or 'Not provided' }}</dd>
+            </div>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Role & Verification</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 capitalize">
+                    {{ db_user.role }}
+                    {% if db_user.is_verified %} <span class="ml-2 text-green-600"><i class="fas fa-check-circle"></i>
+                        Phone Verified</span> {% endif %}
+                </dd>
+            </div>
+            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Registration Date</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ db_user.created_at.strftime("%Y-%m-%d
+                    %H:%M:%S") }}</dd>
+            </div>
+        </dl>
+    </div>
+</div>
+
+{% if profile %}
+<div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:px-6 flex items-center justify-between">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 capitalize">{{ db_user.role }} Profile Data</h3>
+
+        {% if db_user.role == 'employer' %}
+        <form action="/admin/employers/{{ db_user.id }}/verify" method="POST" class="inline">
+            {% if profile.is_verified %}
+            <button type="submit"
+                class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200">
+                Remove Verified Badge
+            </button>
+            {% else %}
+            <button type="submit"
+                class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200">
+                Give Verified Badge
+            </button>
+            {% endif %}
+        </form>
+        {% endif %}
+    </div>
+    <div class="border-t border-gray-200">
+        <dl>
+            {% if db_user.role == 'employer' %}
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Restaurant Name</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 font-bold flex items-center gap-2">
+                    {{ profile.restaurant_name }}
+                    {% if profile.is_verified %}
+                    <i class="fas fa-check-circle text-blue-500" title="Verified Employer"></i>
+                    {% endif %}
+                </dd>
+            </div>
+            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Location</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ profile.city }} | {{ profile.address }}
+                </dd>
+            </div>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Review Rating</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">⭐ {{ profile.rating }} ({{
+                    profile.total_reviews }} reviews)</dd>
+            </div>
+            {% elif db_user.role == 'seeker' %}
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Full Name</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ profile.first_name }} {{
+                    profile.last_name }}</dd>
+            </div>
+            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Experience</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ profile.experience_years }} years</dd>
+            </div>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Availability</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    {% if profile.is_available %}
+                    <span class="text-green-600">Open to work</span>
+                    {% else %}
+                    <span class="text-gray-500">Not available</span>
+                    {% endif %}
+                </dd>
+            </div>
+            {% endif %}
+        </dl>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

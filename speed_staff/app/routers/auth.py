@@ -14,8 +14,11 @@ from app.models.user import User, OTPCode
 from app.schemas.auth import (
     SendOTPRequest, VerifyOTPRequest, RegisterWithEmailRequest,
     LoginWithEmailRequest, RefreshTokenRequest, ChangePasswordRequest,
-    GoogleAuthRequest, TokenResponse, UserResponse, AuthResponse
+    GoogleAuthRequest, TokenResponse, UserResponse, AuthResponse,
+    FinalizeRegistrationRequest
 )
+from app.models.seeker import SeekerProfile
+from app.models.employer import EmployerProfile
 from app.schemas.common import SuccessResponse, ErrorDetail
 from app.utils.hashing import get_password_hash, verify_password
 from app.utils.jwt import create_token_pair, decode_token
@@ -38,9 +41,13 @@ async def send_otp(request: SendOTPRequest, db: AsyncSession = Depends(get_db)):
     if not validate_phone(request.phone):
         return error_response("INVALID_PHONE_FORMAT", "Phone must be in +998XXXXXXXXX format", 400)
     
+    user_stmt = select(User).where(User.phone == request.phone)
+    user_exists = (await db.execute(user_stmt)).scalars().first()
+    purpose = "login" if user_exists else "register"
+
     stmt = select(OTPCode).where(
         OTPCode.phone == request.phone,
-        OTPCode.purpose == request.purpose,
+        OTPCode.purpose == purpose,
         OTPCode.is_used == False,
         OTPCode.expires_at > datetime.now(timezone.utc)
     ).order_by(OTPCode.created_at.desc())
@@ -57,7 +64,7 @@ async def send_otp(request: SendOTPRequest, db: AsyncSession = Depends(get_db)):
         code = f"{random.randint(100000, 999999)}"
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
     
-    new_otp = OTPCode(phone=request.phone, code=code, purpose=request.purpose, expires_at=expires_at)
+    new_otp = OTPCode(phone=request.phone, code=code, purpose=purpose, expires_at=expires_at)
     db.add(new_otp)
     await db.commit()
     
@@ -71,7 +78,6 @@ async def send_otp(request: SendOTPRequest, db: AsyncSession = Depends(get_db)):
 async def verify_otp(request: VerifyOTPRequest, db: AsyncSession = Depends(get_db)):
     stmt = select(OTPCode).where(
         OTPCode.phone == request.phone,
-        OTPCode.purpose == request.purpose,
         OTPCode.is_used == False
     ).order_by(OTPCode.created_at.desc())
     result = await db.execute(stmt)
@@ -93,20 +99,11 @@ async def verify_otp(request: VerifyOTPRequest, db: AsyncSession = Depends(get_d
     otp.is_used = True
     await db.commit()
     
-    if request.purpose == 'register':
-        stmt = select(User).where(User.phone == request.phone)
-        result = await db.execute(stmt)
-        if result.scalars().first():
-            return error_response("USER_ALREADY_EXISTS", "Phone already registered", 409)
+    if otp.purpose == 'register':
+        # Instead of giving token immediately, notify them to finalize registration
+        return JSONResponse(status_code=200, content={"success": True, "action_required": "finalize_registration"})
         
-        user = User(phone=request.phone, is_verified=True, role=request.role or 'user')
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
-        tokens = create_token_pair(str(user.id), user.role)
-        return AuthResponse(user=UserResponse.model_validate(user), tokens=tokens)
-        
-    elif request.purpose == 'login':
+    elif otp.purpose == 'login':
         stmt = select(User).where(User.phone == request.phone)
         result = await db.execute(stmt)
         user = result.scalars().first()
@@ -117,8 +114,61 @@ async def verify_otp(request: VerifyOTPRequest, db: AsyncSession = Depends(get_d
         tokens = create_token_pair(str(user.id), user.role)
         return AuthResponse(user=UserResponse.model_validate(user), tokens=tokens)
         
-    elif request.purpose == 'reset':
+    elif otp.purpose == 'reset':
         return SuccessResponse(message="OTP verified")
+
+@router.post("/register/finalize", response_model=AuthResponse | ErrorDetail)
+async def finalize_registration(request: FinalizeRegistrationRequest, db: AsyncSession = Depends(get_db)):
+    # Verify OTP again to ensure they are the owner
+    stmt = select(OTPCode).where(
+        OTPCode.phone == request.phone,
+        OTPCode.purpose == 'register',
+        OTPCode.code == request.code,
+        OTPCode.is_used == True
+    ).order_by(OTPCode.created_at.desc())
+    result = await db.execute(stmt)
+    otp = result.scalars().first()
+    
+    if not otp:
+        return error_response("UNAUTHORIZED", "Active verified OTP not found for registration", 403)
+        
+    stmt = select(User).where(User.phone == request.phone)
+    result = await db.execute(stmt)
+    if result.scalars().first():
+        return error_response("USER_ALREADY_EXISTS", "Phone already registered", 409)
+        
+    if len(request.password) < 8 or not any(c.isdigit() for c in request.password):
+        return error_response("WEAK_PASSWORD", "Password doesn't meet requirements", 400)
+        
+    hashed_password = get_password_hash(request.password)
+    user = User(
+        phone=request.phone,
+        password_hash=hashed_password,
+        is_verified=True, 
+        role=request.role
+    )
+    db.add(user)
+    await db.flush()
+    
+    if request.role == 'seeker':
+        profile = SeekerProfile(
+            user_id=user.id,
+            first_name=request.first_name or "",
+            last_name=request.last_name or ""
+        )
+        db.add(profile)
+    elif request.role == 'employer':
+        profile = EmployerProfile(
+            user_id=user.id,
+            restaurant_name=request.restaurant_name or ""
+        )
+        db.add(profile)
+        
+    await db.commit()
+    await db.refresh(user)
+    
+    tokens = create_token_pair(str(user.id), user.role)
+    return AuthResponse(user=UserResponse.model_validate(user), tokens=tokens)
 
 @router.post("/register/email", response_model=AuthResponse | ErrorDetail)
 async def register_email(request: RegisterWithEmailRequest, db: AsyncSession = Depends(get_db)):
@@ -244,4 +294,9 @@ async def change_password(request: ChangePasswordRequest, current_user: User = D
         
     current_user.password_hash = get_password_hash(request.new_password)
     await db.commit()
-    return SuccessResponse(message="Password changed successfully")
+@router.delete("/account", response_model=SuccessResponse | ErrorDetail)
+async def delete_account(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    # Delete the user which will automatically cascade to profiles and documents
+    await db.delete(current_user)
+    await db.commit()
+    return SuccessResponse(message="Account and all associated data deleted successfully")

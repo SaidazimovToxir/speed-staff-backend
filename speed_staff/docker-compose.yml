@@ -1,0 +1,122 @@
+# version: '3.8'
+
+# services:
+#   db:
+#     image: postgres:15-alpine
+#     container_name: speed_staff_db
+#     restart: always
+#     environment:
+#       POSTGRES_USER: ${POSTGRES_USER:-postgres}
+#       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+#       POSTGRES_DB: ${POSTGRES_DB:-speed_staff_db}
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     ports:
+#       - "5433:5432"
+      
+#   api:
+#     build: .
+#     container_name: speed_staff_api
+#     restart: always
+#     depends_on:
+#       - db
+#     environment:
+#       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-speed_staff_db}
+#       - SECRET_KEY=${SECRET_KEY}
+#       - ESKIZ_EMAIL=${ESKIZ_EMAIL}
+#       - ESKIZ_PASSWORD=${ESKIZ_PASSWORD}
+#       - ADMIN_USERNAME=${ADMIN_USERNAME}
+#       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+#       - ADMIN_SESSION_SECRET=${ADMIN_SESSION_SECRET}
+#     volumes:
+#       - static_volume:/app/uploads
+#       - logs_volume:/app/logs
+      
+#   nginx:
+#     image: nginx:alpine
+#     container_name: speed_staff_nginx
+#     restart: always
+#     depends_on:
+#       - api
+#     ports:
+#       - "8080:80"
+#     volumes:
+#       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+#       - static_volume:/app/uploads:ro
+
+# volumes:
+#   postgres_data:
+#   static_volume:
+#   logs_volume:
+
+
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: speed_staff_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-speed_staff_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  api:
+    build: .
+    container_name: speed_staff_api
+    restart: always
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-speed_staff_db}
+      - SECRET_KEY=${SECRET_KEY}
+      - ESKIZ_EMAIL=${ESKIZ_EMAIL}
+      - ESKIZ_PASSWORD=${ESKIZ_PASSWORD}
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - ADMIN_SESSION_SECRET=${ADMIN_SESSION_SECRET}
+      - DEBUG=${DEBUG:-False}
+    volumes:
+      - ./uploads:/app/uploads      # ← serverning o'z papkasi
+      - ./logs:/app/logs            # ← serverning o'z papkasi
+    networks:
+      - app_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: speed_staff_nginx
+    restart: always
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./uploads:/app/uploads:ro   # ← xuddi shu papka
+      - certbot_www:/var/www/certbot:ro
+      - certbot_conf:/etc/letsencrypt:ro
+    networks:
+      - app_network
+
+  certbot:
+    image: certbot/certbot
+    container_name: speed_staff_certbot
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+volumes:
+  postgres_data:
+  certbot_www:
+  certbot_conf:
+
+networks:
+  app_network:
+    driver: bridge

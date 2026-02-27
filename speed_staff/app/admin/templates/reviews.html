@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Reviews{% endblock %}
+{% block header %}Reviews Management{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Employer Target</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Comment</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Visibility</th>
+                <!-- <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th> -->
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+            {% for r in reviews %}
+            <tr class="hover:bg-gray-50 {% if r.is_flagged %}bg-red-50{% endif %}">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">{{ r.employer.restaurant_name }}</div>
+                    <div class="text-xs text-gray-500">By: {{ r.author.phone }}</div>
+                    <div class="mt-1 text-sm text-yellow-500">
+                        {% for i in range(r.rating) %}⭐{% endfor %}
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-gray-900 truncate" style="max-width: 300px;">{{ r.comment or 'No comment'
+                        }}</div>
+                    <div class="text-xs text-gray-500 mt-1">{{ r.created_at.strftime("%Y-%m-%d %H:%M") }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    {% if r.is_flagged %}
+                    <span
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 mb-1 block w-min">Flagged</span>
+                    {% endif %}
+
+                    {% if r.is_visible %}
+                    <span
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Visible</span>
+                    {% else %}
+                    <span
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Hidden</span>
+                    {% endif %}
+                </td>
+                <!-- Future admin manipulation controls could go here. Keeping UI clean as requested -->
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="px-6 py-4 shadow-inner text-center text-gray-500">No reviews found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="bg-gray-50 px-4 py-3 border-t border-gray-200 flex items-center justify-between sm:px-6">
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700">Page <span class="font-medium">{{ page }}</span></p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    {% if page > 1 %}
+                    <a href="?page={{ page - 1 }}"
+                        class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    {% endif %}
+                    <a href="?page={{ page + 1 }}"
+                        class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
