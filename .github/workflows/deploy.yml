@@ -17,7 +17,9 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd ~/speed-staff-backend
+            git stash
             git pull origin main
+            git stash drop
             cd speed_staff
             docker compose up -d --build
             docker system prune -f
