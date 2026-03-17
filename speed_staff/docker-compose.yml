@@ -115,3 +115,7 @@ volumes:
   postgres_data:
   certbot_www:
   certbot_conf:
+
+networks:
+  app_network:
+    driver: bridge
