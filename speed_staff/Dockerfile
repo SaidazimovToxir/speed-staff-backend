@@ -30,7 +30,6 @@
 # RUN chmod +x /app/start.sh
 
 # # Run the entrypoint script
-CMD ["/app/start.sh"]
 
 FROM python:3.12-slim
 
@@ -55,3 +54,5 @@ COPY . /app/
 RUN mkdir -p /app/logs /app/uploads
 
 RUN chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]
