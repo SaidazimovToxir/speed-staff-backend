@@ -1,7 +1,9 @@
 from datetime import date, datetime
 from typing import Optional, List
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+BASE_URL = "https://api.speed-staff.uz"
 
 class SkillResponse(BaseModel):
     id: int
@@ -49,6 +51,12 @@ class SeekerDocumentResponse(SeekerDocumentBase):
     is_verified: bool
     created_at: datetime
 
+    @field_validator('file_url', mode='before')
+    @classmethod
+    def prepend_base_url(cls, v: str) -> str:
+        if v and v.startswith('/uploads'): return f"{BASE_URL}{v}"
+        return v
+
     model_config = {"from_attributes": True}
 
 class SeekerProfileCreate(BaseModel):
@@ -93,6 +101,12 @@ class SeekerProfileShortResponse(BaseModel):
     city: Optional[str] = None
     is_available: bool
 
+    @field_validator('avatar_url', mode='before')
+    @classmethod
+    def prepend_base_url(cls, v: Optional[str]) -> Optional[str]:
+        if v and v.startswith('/uploads'): return f"{BASE_URL}{v}"
+        return v
+
     model_config = {"from_attributes": True}
 
 class SeekerProfileResponse(SeekerProfileCreate):
@@ -117,6 +131,12 @@ class SeekerProfileResponse(SeekerProfileCreate):
     experiences: List[WorkExperienceResponse] = []
     documents: List[SeekerDocumentResponse] = []
 
+    @field_validator('avatar_url', 'resume_url', mode='before')
+    @classmethod
+    def prepend_base_url(cls, v: Optional[str]) -> Optional[str]:
+        if v and v.startswith('/uploads'): return f"{BASE_URL}{v}"
+        return v
+
     model_config = {"from_attributes": True}
 
 class AddSkillRequest(BaseModel):
@@ -125,3 +145,9 @@ class AddSkillRequest(BaseModel):
 
 class FileUploadResponse(BaseModel):
     url: str
+
+    @field_validator('url', mode='before')
+    @classmethod
+    def prepend_base_url(cls, v: str) -> str:
+        if v and v.startswith('/uploads'): return f"{BASE_URL}{v}"
+        return v

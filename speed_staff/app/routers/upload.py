@@ -57,7 +57,7 @@ async def upload_avatar(file: UploadFile = File(...), current_user: User = Depen
             profile.avatar_url = url
             await db.commit()
 
-    return {"url": url}
+    return {"url": f"https://api.speed-staff.uz{url}"}
 
 @router.post("/resume")
 async def upload_resume(file: UploadFile = File(...), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -85,7 +85,7 @@ async def upload_resume(file: UploadFile = File(...), current_user: User = Depen
         profile.resume_url = url
         await db.commit()
 
-    return {"url": url}
+    return {"url": f"https://api.speed-staff.uz{url}"}
 
 @router.post("/logo")
 async def upload_logo(file: UploadFile = File(...), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -112,7 +112,7 @@ async def upload_logo(file: UploadFile = File(...), current_user: User = Depends
         profile.logo_url = url
         await db.commit()
 
-    return {"url": url}
+    return {"url": f"https://api.speed-staff.uz{url}"}
 
 @router.post("/document")
 async def upload_document(
@@ -155,4 +155,4 @@ async def upload_document(
     db.add(new_doc)
     await db.commit()
 
-    return {"url": url, "message": "Document uploaded successfully"}
+    return {"url": f"https://api.speed-staff.uz{url}", "message": "Document uploaded successfully"}

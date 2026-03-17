@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 from uuid import UUID
 from pydantic import BaseModel
 
@@ -17,10 +17,10 @@ class VacancyCreate(BaseModel):
     requirements: Optional[str] = None
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
-    salary_type: str = "negotiable"
+    salary_type: Literal['fixed', 'negotiable', 'hourly'] = "negotiable"
     experience_min: int = 0
     experience_max: Optional[int] = None
-    work_type: str
+    work_type: Literal['fulltime', 'parttime', 'shift']
     schedule: Optional[str] = None
 
 class VacancyUpdate(BaseModel):
@@ -30,14 +30,14 @@ class VacancyUpdate(BaseModel):
     requirements: Optional[str] = None
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
-    salary_type: Optional[str] = None
+    salary_type: Optional[Literal['fixed', 'negotiable', 'hourly']] = None
     experience_min: Optional[int] = None
     experience_max: Optional[int] = None
-    work_type: Optional[str] = None
+    work_type: Optional[Literal['fulltime', 'parttime', 'shift']] = None
     schedule: Optional[str] = None
 
 class VacancyStatusUpdate(BaseModel):
-    status: str
+    status: Literal['active', 'paused', 'closed']
 
 class VacancySkillResponse(BaseModel):
     skill: SkillResponse

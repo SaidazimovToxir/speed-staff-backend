@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+BASE_URL = "https://api.speed-staff.uz"
 
 class EmployerProfileCreate(BaseModel):
     restaurant_name: str
@@ -36,6 +38,12 @@ class EmployerProfileShortResponse(BaseModel):
     is_verified: bool
     total_reviews: int
 
+    @field_validator('logo_url', mode='before')
+    @classmethod
+    def prepend_base_url(cls, v: Optional[str]) -> Optional[str]:
+        if v and v.startswith('/uploads'): return f"{BASE_URL}{v}"
+        return v
+
     model_config = {"from_attributes": True}
 
 class EmployerProfileResponse(EmployerProfileCreate):
@@ -46,5 +54,11 @@ class EmployerProfileResponse(EmployerProfileCreate):
     total_reviews: int
     created_at: datetime
     updated_at: datetime
+
+    @field_validator('logo_url', mode='before')
+    @classmethod
+    def prepend_base_url(cls, v: Optional[str]) -> Optional[str]:
+        if v and v.startswith('/uploads'): return f"{BASE_URL}{v}"
+        return v
 
     model_config = {"from_attributes": True}
