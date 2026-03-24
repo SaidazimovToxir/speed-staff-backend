@@ -92,7 +92,8 @@ async def list_own_applications(
         return error_response("PROFILE_NOT_FOUND", "Profile not found", 404)
 
     stmt = select(Application).options(
-        selectinload(Application.vacancy).selectinload(Vacancy.employer)
+        selectinload(Application.vacancy).selectinload(Vacancy.employer),
+        selectinload(Application.seeker)
     ).where(Application.seeker_id == seeker_id)
 
     if status:
