@@ -48,7 +48,10 @@ async def upload_avatar(file: UploadFile = File(...), current_user: User = Depen
     file_path = f"{UPLOAD_DIR}/avatars/{file_id}.{ext}"
     url = f"/uploads/avatars/{file_id}.{ext}"
 
-    await _resize_and_save_image(file_data, file_path, (800, 800))
+    try:
+        await _resize_and_save_image(file_data, file_path, (800, 800))
+    except ValueError as e:
+        return ErrorDetail(error_code="IMAGE_PROCESSING_FAILED", message=str(e)).model_dump(), 400
     
     if current_user.role == "seeker":
         result = await db.execute(select(SeekerProfile).where(SeekerProfile.user_id == current_user.id))
@@ -104,7 +107,10 @@ async def upload_logo(file: UploadFile = File(...), current_user: User = Depends
     file_path = f"{UPLOAD_DIR}/logos/{file_id}.{ext}"
     url = f"/uploads/logos/{file_id}.{ext}"
 
-    await _resize_and_save_image(file_data, file_path, (400, 400))
+    try:
+        await _resize_and_save_image(file_data, file_path, (400, 400))
+    except ValueError as e:
+        return ErrorDetail(error_code="IMAGE_PROCESSING_FAILED", message=str(e)).model_dump(), 400
     
     result = await db.execute(select(EmployerProfile).where(EmployerProfile.user_id == current_user.id))
     profile = result.scalars().first()
