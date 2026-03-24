@@ -19,8 +19,9 @@ jobs:
             cd ~/speed-staff-backend
             git stash
             git pull origin main
-            git stash drop
             cd speed_staff
+            sed -i 's/\r//' start.sh
+            chmod +x start.sh
             docker compose up -d --build
             docker system prune -f
             echo "Deploy muvaffaqiyatli!"
